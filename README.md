@@ -25,7 +25,7 @@ uvicorn app.main:app --reload
 Visit `http://127.0.0.1:8000/docs` to test.
 
 ## Live demo
-[link coming soon]
+[Link](https://pothole-severity-detector.onrender.com/docs)
 
 ## Dataset
 [Pothole Detection using YOLOv8](https://universe.roboflow.com/parul-university-wsshr/pothole-detection-using-yolov8) — Parul University, via Roboflow Universe
