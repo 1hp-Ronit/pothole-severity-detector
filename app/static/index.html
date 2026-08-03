@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pothole Severity Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #17181b;
+    --surface-2: #1e2023;
+    --border: #2a2c30;
+    --border-hover: #3a3d42;
+    --text: #e8e9eb;
+    --text-muted: #8b8e94;
+    --text-faint: #5c5f65;
+    --minor: #6fcf97;
+    --moderate: #f2c94c;
+    --severe: #eb5757;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 0);
+    background-size: 24px 24px;
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 64px 20px 80px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+
+  .sub {
+    color: var(--text-muted);
+    font-size: 14.5px;
+    line-height: 1.5;
+    margin: 0 0 40px;
+    max-width: 46ch;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--border-hover);
+    border-radius: var(--radius);
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+  }
+
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--text-muted);
+    background: var(--surface-2);
+  }
+
+  .dropzone input { display: none; }
+
+  .dz-icon {
+    width: 34px; height: 34px;
+    margin: 0 auto 14px;
+    color: var(--text-faint);
+  }
+
+  .dz-label {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .dz-filename {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  button.primary {
+    width: 100%;
+    margin-top: 18px;
+    padding: 13px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.05s ease;
+  }
+
+  button.primary:disabled {
+    background: var(--surface-2);
+    color: var(--text-faint);
+    cursor: not-allowed;
+  }
+
+  button.primary:not(:disabled):hover { opacity: 0.88; }
+  button.primary:not(:disabled):active { transform: scale(0.99); }
+
+  button.primary:focus-visible,
+  .dropzone:focus-visible {
+    outline: 2px solid var(--text-muted);
+    outline-offset: 2px;
+  }
+
+  .status {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+
+  .status.show { display: flex; }
+
+  .pulse {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: pulse 1.1s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .results { margin-top: 28px; display: none; }
+  .results.show { display: block; }
+
+  .results img {
+    width: 100%;
+    display: block;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  .summary {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .badge.minor .dot { background: var(--minor); }
+  .badge.moderate .dot { background: var(--moderate); }
+  .badge.severe .dot { background: var(--severe); }
+
+  .empty {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+
+  .error {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: rgba(235, 87, 87, 0.08);
+    border: 1px solid rgba(235, 87, 87, 0.25);
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #f2a5a5;
+    display: none;
+  }
+
+  .error.show { display: block; }
+
+  footer {
+    margin-top: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">Road Damage Analysis</div>
+    <h1>Pothole Severity Scanner</h1>
+    <p class="sub">Upload a road photo. The model detects potholes and grades each one minor, moderate, or severe based on relative size in frame.</p>
+
+    <div class="card">
+      <label class="dropzone" id="dropzone" tabindex="0">
+        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 16V4M12 4L7 9M12 4l5 5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="dz-label">Click to upload, or drag a photo here</div>
+        <div class="dz-filename" id="filename"></div>
+        <input type="file" id="fileInput" accept="image/*">
+      </label>
+
+      <button class="primary" id="analyzeBtn" disabled>Analyze photo</button>
+
+      <div class="status" id="status">
+        <span class="pulse"></span>
+        <span id="statusText">Analyzing frame…</span>
+      </div>
+
+      <div class="error" id="error"></div>
+
+      <div class="results" id="results">
+        <img id="resultImg" alt="Annotated detection result">
+        <div class="summary" id="summary"></div>
+        <div class="empty" id="emptyState" style="display:none;">No potholes detected in this image.</div>
+      </div>
+    </div>
+
+    <footer>YOLOv8n · fine-tuned · CPU inference<br>Built by Ronit Kumar · Reg. No. 250202</footer>
+  </div>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const filenameEl = document.getElementById('filename');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const status = document.getElementById('status');
+  const statusText = document.getElementById('statusText');
+  const results = document.getElementById('results');
+  const resultImg = document.getElementById('resultImg');
+  const summary = document.getElementById('summary');
+  const emptyState = document.getElementById('emptyState');
+  const errorBox = document.getElementById('error');
+
+  let selectedFile = null;
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+  });
+
+  ['dragover', 'dragenter'].forEach(evt =>
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); })
+  );
+  ['dragleave', 'drop'].forEach(evt =>
+    dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); })
+  );
+  dropzone.addEventListener('drop', e => {
+    if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) setFile(fileInput.files[0]);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    filenameEl.textContent = file.name;
+    analyzeBtn.disabled = false;
+    results.classList.remove('show');
+    errorBox.classList.remove('show');
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    analyzeBtn.disabled = true;
+    status.classList.add('show');
+    statusText.textContent = 'Analyzing frame…';
+    results.classList.remove('show');
+    errorBox.classList.remove('show');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const [jsonRes, imgRes] = await Promise.all([
+        fetch('/detect', { method: 'POST', body: formData.clone ? formData : cloneFormData(selectedFile) }),
+        fetch('/detect-image', { method: 'POST', body: cloneFormData(selectedFile) })
+      ]);
+
+      if (!jsonRes.ok || !imgRes.ok) throw new Error('Server returned an error. The service may be waking up — try again in a few seconds.');
+
+      const data = await jsonRes.json();
+      const blob = await imgRes.blob();
+
+      resultImg.src = URL.createObjectURL(blob);
+
+      const counts = { minor: 0, moderate: 0, severe: 0 };
+      data.detections.forEach(d => counts[d.severity]++);
+
+      summary.innerHTML = '';
+      if (data.detections.length === 0) {
+        emptyState.style.display = 'block';
+      } else {
+        emptyState.style.display = 'none';
+        ['severe', 'moderate', 'minor'].forEach(level => {
+          if (counts[level] > 0) {
+            const b = document.createElement('span');
+            b.className = `badge ${level}`;
+            b.innerHTML = `<span class="dot"></span>${counts[level]} ${level}`;
+            summary.appendChild(b);
+          }
+        });
+      }
+
+      results.classList.add('show');
+    } catch (err) {
+      errorBox.textContent = err.message || 'Something went wrong. Please try again.';
+      errorBox.classList.add('show');
+    } finally {
+      status.classList.remove('show');
+      analyzeBtn.disabled = false;
+    }
+  });
+
+  function cloneFormData(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fd;
+  }
+</script>
+</body>
+</html>
